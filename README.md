@@ -57,4 +57,5 @@ folder.
  - code-coverage-executable (cc-executable) - Lists the executable lines in a
 file designated by the --path tag.
  - code-coverage-list-unprocessed (cc-list) - Dumps a list of unprocessed set
-IDs to stdout.
+IDs to stdout. This list can have a timestamp attached to it using the tag
+--timestamp, and can be exported to a CSV file using --csv.
