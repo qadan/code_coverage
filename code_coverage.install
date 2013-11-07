@@ -1,0 +1,121 @@
+<?php
+
+/**
+ * @file
+ * Provides installation related functions.
+ *
+ * @author Jimmy Berry ("boombatower", http://drupal.org/user/214218)
+ */
+
+/**
+ * Implements hook_uninstall().
+ */
+function code_coverage_uninstall() {
+  db_delete('variable')
+    ->condition('name', 'code_coverage%', 'LIKE')
+    ->execute();
+
+  // Remove any left over code_coverage raw files.
+  $coverage_files = file_scan_directory('temporary://', '/code_coverage/', array('recurse' => FALSE));
+  foreach ($coverage_files as $coverage_file) {
+    file_unmanaged_delete_recursive($coverage_file->uri);
+  }
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function code_coverage_requirements($phase) {
+  global $base_url;
+  $requirements = array();
+  $t = get_t();
+
+  $xdebug = function_exists('xdebug_start_code_coverage');
+  $requirements['php_xdebug'] = array(
+    'title' => $t('Code coverage: PHP Xdebug extension'),
+    'value' => $xdebug ? $t('Enabled') : $t('Missing'),
+    'severity' => $xdebug ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+  );
+
+  $patched = function_exists('code_coverage_record');
+  $requirements['code_coverage_patch'] = array(
+    'title' => $t('Code coverage: core patch'),
+    'value' => $patched ? $t('Applied') : $t('Missing'),
+    'severity' => $patched ? REQUIREMENT_OK : REQUIREMENT_ERROR,
+  );
+  if (!$patched) $requirements['code_coverage_patch']['description'] = t('Please apply the <a href="!link">code_coverage.patch</a> to Drupal core.', array('!link' => $base_url . '/' . drupal_get_path('module', 'code_coverage') . '/code_coverage.patch'));
+
+  return $requirements;
+}
+
+/**
+ * Implements hook_schema().
+ */
+function code_coverage_schema() {
+  $schema = array();
+
+  $schema['code_coverage'] = array(
+    'description' => 'Code coverage data stored per file.',
+    'fields' => array(
+      'file_id' => array(
+        'description' => 'Unique file ID.',
+        'type' => 'serial',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'coverage_set' => array(
+        'description' => 'Coverage set identifier.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'path' => array(
+        'description' => 'Relative path to file.',
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'executed' => array(
+        'description' => 'Number of executed lines in file.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'default' => 0,
+      ),
+      'executable' => array(
+        'description' => 'Number of executable lines in file.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+        'default' => 0,
+      ),
+      'data' => array(
+        'description' => 'JSON line usage data for file.',
+        'type' => 'blob',
+        'not null' => TRUE,
+        'size' => 'big',
+      ),
+    ),
+    'primary key' => array('file_id'),
+    'indexes' => array(
+      'coverage_set' => array('coverage_set'),
+      'path' => array('path'),
+    ),
+  );
+
+  $schema['code_coverage_sets'] = array(
+    'description' => 'A list of unprocessed code coverage sets',
+    'fields' => array(
+      'id' => array(
+        'description' => 'The coverage ID of the set',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+    ),
+    'primary key' => array('id'),
+  );
+
+  return $schema;
+}

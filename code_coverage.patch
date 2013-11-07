@@ -1,0 +1,141 @@
+From eba46947c27caf525ec2d6471941d200df323644 Mon Sep 17 00:00:00 2001
+From: boombatower <jimmy@boombatower.com>
+Date: Wed, 30 May 2012 06:04:25 -0500
+Subject: Patch against Drupal core to enable code_coverage support.
+
+---
+ includes/bootstrap.inc                      |    2 ++
+ includes/common.inc                         |    1 +
+ modules/simpletest/drupal_web_test_case.php |   31 +++++++++++++++++++++++++++
+ 3 files changed, 34 insertions(+)
+
+diff --git a/includes/bootstrap.inc b/includes/bootstrap.inc
+index d9f5aa1..0f5d69e 100644
+--- a/includes/bootstrap.inc
++++ b/includes/bootstrap.inc
+@@ -5,6 +5,8 @@
+  * Functions that need to be loaded on every Drupal request.
+  */
+ 
++require_once DRUPAL_ROOT . '/sites/all/modules/code_coverage/code_coverage.xdebug.inc';
++
+ /**
+  * The current system version.
+  */
+diff --git a/includes/common.inc b/includes/common.inc
+index 8755c94..a973667 100644
+--- a/includes/common.inc
++++ b/includes/common.inc
+@@ -879,6 +879,7 @@ function drupal_http_request($url, array $options = array()) {
+   $test_info = &$GLOBALS['drupal_test_info'];
+   if (!empty($test_info['test_run_id'])) {
+     $options['headers']['User-Agent'] = drupal_generate_test_ua($test_info['test_run_id']);
++    $options['headers']['X-Drupal-Testing'] = json_encode($test_info);
+   }
+ 
+   $request = $options['method'] . ' ' . $path . " HTTP/1.0\r\n";
+diff --git a/modules/simpletest/drupal_web_test_case.php b/modules/simpletest/drupal_web_test_case.php
+index 251c5c1..8833d1a 100644
+--- a/modules/simpletest/drupal_web_test_case.php
++++ b/modules/simpletest/drupal_web_test_case.php
+@@ -492,6 +492,17 @@ abstract class DrupalTestCase {
+           'line' => $method_info->getStartLine(),
+           'function' => $class . '->' . $method . '()',
+         );
++
++        // Store the caller information in the test_info.
++        $GLOBALS['drupal_test_info'] = array(
++          'test_id' => $this->testId,
++          'test_run_id' => '',
++          'in_child_site' => FALSE,
++          'caller' => $caller,
++        );
++
++        code_coverage_start();
++
+         $completion_check_id = DrupalTestCase::insertAssert($this->testId, $class, FALSE, t('The test did not complete due to a fatal error.'), 'Completion check', $caller);
+         $this->setUp();
+         if ($this->setup) {
+@@ -509,11 +520,19 @@ abstract class DrupalTestCase {
+         }
+         // Remove the completion check record.
+         DrupalTestCase::deleteAssert($completion_check_id);
++        unset($GLOBALS['drupal_test_info']);
++
++        code_coverage_stop(FALSE);
+       }
+     }
+     // Clear out the error messages and restore error handler.
+     drupal_get_messages();
+     restore_error_handler();
++
++    code_coverage_record($this->testId);
++    $q = db_insert('code_coverage_sets')
++      ->fields(array('id' => $this->testId))
++      ->execute();
+   }
+ 
+   /**
+@@ -679,6 +695,8 @@ class DrupalUnitTestCase extends DrupalTestCase {
+    * method.
+    */
+   protected function setUp() {
++    code_coverage_stop(FALSE);
++
+     global $conf;
+ 
+     // Store necessary current values before switching to the test environment.
+@@ -717,9 +735,13 @@ class DrupalUnitTestCase extends DrupalTestCase {
+       module_list(TRUE, FALSE, FALSE, $module_list);
+     }
+     $this->setup = TRUE;
++
++    code_coverage_start();
+   }
+ 
+   protected function tearDown() {
++    code_coverage_stop(FALSE);
++
+     global $conf;
+ 
+     // Get back to the original connection.
+@@ -1262,6 +1284,8 @@ class DrupalWebTestCase extends DrupalTestCase {
+    *   either a single array or a variable number of string arguments.
+    */
+   protected function setUp() {
++    code_coverage_stop(FALSE);
++
+     global $user, $language, $conf;
+ 
+     // Generate a temporary prefixed database to ensure that tests have a clean starting point.
+@@ -1404,6 +1428,8 @@ class DrupalWebTestCase extends DrupalTestCase {
+ 
+     drupal_set_time_limit($this->timeLimit);
+     $this->setup = TRUE;
++
++    code_coverage_start();
+   }
+ 
+   /**
+@@ -1491,6 +1517,8 @@ class DrupalWebTestCase extends DrupalTestCase {
+    * and reset the database prefix.
+    */
+   protected function tearDown() {
++    code_coverage_stop(FALSE);
++
+     global $user, $language;
+ 
+     // In case a fatal error occurred that was not in the test process read the
+@@ -1608,6 +1636,9 @@ class DrupalWebTestCase extends DrupalTestCase {
+   protected function curlExec($curl_options, $redirect = FALSE) {
+     $this->curlInitialize();
+ 
++    // Include global $drupal_test_info in HTTP headers.
++    $curl_options[CURLOPT_HTTPHEADER][] = 'X-Drupal-Test-Info: ' . json_encode($GLOBALS['drupal_test_info']);
++
+     // cURL incorrectly handles URLs with a fragment by including the
+     // fragment in the request to the server, causing some web servers
+     // to reject the request citing "400 - Bad Request". To prevent
+-- 
+1.7.9.2
+

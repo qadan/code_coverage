@@ -1,0 +1,131 @@
+<?php
+
+/**
+ * @file
+ * Records code coverage while running tests.
+ *
+ * @author Jimmy Berry ("boombatower", http://drupal.org/user/214218)
+ */
+
+/**
+ * Implements hook_menu().
+ */
+function code_coverage_menu() {
+  $items['code_coverage/%'] = array(
+    'title' => 'Code coverage',
+    'page callback' => 'code_coverage_report_view',
+    'page arguments' => array(1),
+    'access arguments' => array('view code_coverage reports'),
+    'file' => 'code_coverage.report.inc',
+  );
+  $items['code_coverage/%/%'] = array(
+    'title' => 'Code coverage',
+    'page callback' => 'code_coverage_report_view_file',
+    'page arguments' => array(1, 2),
+    'access arguments' => array('view code_coverage reports'),
+    'file' => 'code_coverage.report.inc',
+  );
+  $items['admin/config/development/code_coverage'] = array(
+    'title' => 'Code coverage',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('code_coverage_settings_form'),
+    'access arguments' => array('administer site configuration'),
+  );
+
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function code_coverage_permission() {
+  return array(
+    'view code_coverage reports' => array(
+      'title' => t('View code coverage reports'),
+      'description' => t('View the code coverage reports.'),
+    ),
+  );
+}
+
+/**
+ * Settings form.
+ */
+function code_coverage_settings_form($form, &$form_state) {
+  $form['clear'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Clear'),
+    '#description' => t('Clear all results stored in database.'),
+  );
+  $form['clear']['op'] = array(
+    '#type' => 'submit',
+    '#value' => t('Clear results'),
+    '#submit' => array('code_coverage_result_clear'),
+  );
+
+  $form['filter'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Filter'),
+  );
+  $form['filter']['code_coverage_modules'] = array(
+    '#type' => 'checkboxes',
+    '#title' => t('Modules'),
+    '#description' => t('Modules to record code coverage for. Leave blank for all.'),
+    '#options' => module_list(),
+    '#default_value' => variable_get('code_coverage_modules', array()),
+  );
+  unset($form['filter']['code_coverage_modules']['#options']['code_coverage']);
+  $form['filter']['code_coverage_files'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Files'),
+    '#description' => t('Files to record code coverage for (use relative path and place each on separate line). Leave blank for all.'),
+    '#default_value' => variable_get('code_coverage_files', ''),
+  );
+
+  $form = system_settings_form($form);
+  $form['#submit'][] = 'code_coverage_settings_form_process';
+  return $form;
+}
+
+/**
+ * Pre-process settings so they are ready for use.
+ */
+function code_coverage_settings_form_process($form, &$form_state) {
+  // Use the module path when comparing against the relative path.
+  $modules = array_keys(array_filter($form_state['values']['code_coverage_modules']));
+  foreach ($modules as &$module) {
+    $module = drupal_get_path('module', $module);
+  }
+  variable_set('code_coverage_modules', $modules);
+
+  // If the first entry is empty then the file filter was not set.
+  $files = explode("\n", $form_state['values']['code_coverage_files']);
+  if (!$files[0]) {
+    $files = array();
+  }
+  foreach ($files as &$file) {
+    $file = trim($file);
+  }
+  variable_set('code_coverage_files', $files);
+}
+
+/**
+ * Clear all results stored in database.
+ */
+function code_coverage_result_clear() {
+  // Display message containing total number of records cleared.
+  drupal_set_message(t('Cleared @count record(s).', array('@count' => number_format(db_delete('code_coverage')->execute()))));
+}
+
+/**
+ * Implements hook_form_FORMID_alter().
+ *
+ * Processes code coverage data that has been recorded during a test run and
+ * outputs a link to review the results.
+ */
+function code_coverage_form_simpletest_result_form_alter(&$form, &$form_state) {
+  $test_id = $form_state['build_info']['args'][0];
+  module_load_include('process.inc', 'code_coverage');
+  if (code_coverage_process($test_id)) {
+    drupal_set_message(t('View the !coverage_report_link for the test run.', array('!coverage_report_link' => l(t('code coverage report'), 'code_coverage/' . $test_id))));
+  }
+}

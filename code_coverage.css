@@ -1,0 +1,45 @@
+/**
+ * CSS for code coverage results.
+ *
+ * @author Jimmy Berry ("boombatower", http://drupal.org/user/214218)
+ */
+
+table.code-coverage caption {
+  font-weight: bold;
+}
+
+table.code-coverage tr.code-coverage-covered.odd {
+  background-color: #b6ffb6;
+}
+
+table.code-coverage tr.code-coverage-covered.even {
+  background-color: #9bff9b;
+}
+
+table.code-coverage tr.code-coverage-uncovered.odd {
+  background-color: #ffc9c9;
+}
+
+table.code-coverage tr.code-coverage-uncovered.even {
+  background-color: #ffacac;
+}
+
+ol#code-coverage-file {
+  line-height: 1em;
+  overflow: hidden;
+  padding-left: 60px;
+}
+
+ol#code-coverage-file li {
+  white-space: pre;
+  font-family: courier new, monospace;
+  color: #cccccc;
+}
+
+ol#code-coverage-file li.code-coverage-covered {
+  color: green;
+}
+
+ol#code-coverage-file li.code-coverage-uncovered {
+  color: red;
+}
