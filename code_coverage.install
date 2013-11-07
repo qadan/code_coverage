@@ -14,6 +14,10 @@ function code_coverage_uninstall() {
   db_delete('variable')
     ->condition('name', 'code_coverage%', 'LIKE')
     ->execute();
+  db_delete('code_coverage')
+    ->execute();
+  db_delete('code_coverage_sets')
+    ->execute();
 
   // Remove any left over code_coverage raw files.
   $coverage_files = file_scan_directory('temporary://', '/code_coverage/', array('recurse' => FALSE));
@@ -110,6 +114,12 @@ function code_coverage_schema() {
       'id' => array(
         'description' => 'The coverage ID of the set',
         'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'created' => array(
+        'description' => 'The time the ID was placed in the database',
+        'type' => 'timestamp',
         'unsigned' => TRUE,
         'not null' => TRUE,
       ),

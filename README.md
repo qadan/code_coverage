@@ -37,4 +37,24 @@ form at admin/config/development/code_coverage.
 DRUSH COMMANDS
 --------------
 
-@TODO: this lol
+The biggest change to this fork of code_coverage is to the ways Drush can work.
+More options have been added, and the schema has been updated to ensure the
+module can work completely form the command line in an automated context, such
+as with a continuous integration server, without having to make note of the IDs
+of test runs.
+
+Drush supports the following commands:
+ - code-coverage-process (cc-process) - processes a coverage set of raw Xdebug
+data. You can run it as "cc-process set_id" to process an individual set, or
+run "cc-process all" to process all sets that are currently unprocessed.
+ - code-coverage-export (cc-export) - exports a code coverage set. It supports
+HTML, XML, JSON and CSV formats using the tags --html, --xml, --json and --csv,
+respectively. HTML can be further configured using the --tag-html and
+--generate-index tags, which, respectively, enclose the HTML files in <html>
+and <body> tags, and generate an index file. Lastly, the --path tag can be used
+to change the path to the exported files from the default /tmp/code_coverage_id
+folder.
+ - code-coverage-executable (cc-executable) - Lists the executable lines in a
+file designated by the --path tag.
+ - code-coverage-list-unprocessed (cc-list) - Dumps a list of unprocessed set
+IDs to stdout.

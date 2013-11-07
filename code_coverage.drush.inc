@@ -46,6 +46,14 @@ function code_coverage_drush_command() {
     'aliases' => array('cc-executable'),
     'bootstrap' => DRUSH_BOOTSTRAP_DRUSH,
   );
+  $items['code-coverage-list-unprocessed'] = array(
+    'description' => dt('Dump a list of unprocessed coverage set IDs to stdout.'),
+    'options' => array(
+      'timestamp' => dt('List each ID with a timestamp of when it was created.'),
+      'csv' => dt('Export the list, with timestamps, to a CSV file at at the specified path (defaults to temporary://code_coverage_unprocessed_TIMESTAMP.csv)'),
+    ),
+    'aliases' => array('cc-list'),
+  );
 
   return $items;
 }
@@ -319,4 +327,43 @@ function generate_valid_xml_from_array($array, $node_block='nodes', $node_name='
   $xml .= '</' . $node_block . '>' . "\n";
 
   return $xml;
+}
+
+/**
+ * Return a list of unprocessed set IDs.
+ */
+function drush_code_coverage_list_unprocessed() {
+  // Grab the list, check if it's empty.
+  $list = db_select('code_coverage_sets', 'c')
+      ->fields('c', array('id', 'created'))
+      ->execute()
+      ->fetchAllKeyed();
+  if (empty($list)) {
+    drush_print('There are no unprocessed coverage sets.');
+    return;
+  }
+
+  // If the --csv tag is set, export some CSV.
+  if ($path = drush_get_option('csv')) {
+    $csv = "ID,Timestamp\n";
+    foreach ($list as $id => $created) {
+      $csv .= $id . "," . $created . "\n";
+    }
+    if ($path == 1) {
+      $path = 'temporary://code_coverage_unprocessed_' . time() . '.csv';
+    }
+    file_unmanaged_save_data($csv, $path, FILE_EXISTS_REPLACE);
+  }
+
+  //If the --timestamp tag is set, add them in. Otherwise just print the list.
+  if (drush_get_option('timestamp')) {
+    foreach ($list as $id => $created) {
+      drush_print($id . " ($created)");
+    }
+  }
+  else {
+    foreach ($list as $id => $created) {
+      drush_print($id);
+    }
+  }
 }
