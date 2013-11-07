@@ -56,7 +56,7 @@ index 251c5c1..8833d1a 100644
          $completion_check_id = DrupalTestCase::insertAssert($this->testId, $class, FALSE, t('The test did not complete due to a fatal error.'), 'Completion check', $caller);
          $this->setUp();
          if ($this->setup) {
-@@ -509,11 +520,19 @@ abstract class DrupalTestCase {
+@@ -509,11 +523,22 @@ abstract class DrupalTestCase {
          }
          // Remove the completion check record.
          DrupalTestCase::deleteAssert($completion_check_id);
@@ -71,7 +71,10 @@ index 251c5c1..8833d1a 100644
 +
 +    code_coverage_record($this->testId);
 +    $q = db_insert('code_coverage_sets')
-+      ->fields(array('id' => $this->testId))
++      ->fields(array(
++        'id' => $this->testId,
++        'created' => time()
++      ))
 +      ->execute();
    }
  

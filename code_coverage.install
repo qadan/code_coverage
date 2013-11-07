@@ -118,10 +118,11 @@ function code_coverage_schema() {
         'not null' => TRUE,
       ),
       'created' => array(
-        'description' => 'The time the ID was placed in the database',
-        'type' => 'timestamp',
+        'description' => 'UNIX timestamp designating when the ID was placed in the database',
+        'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
+        'default' => 0,
       ),
     ),
     'primary key' => array('id'),
