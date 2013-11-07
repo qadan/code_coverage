@@ -73,7 +73,7 @@ index 251c5c1..8833d1a 100644
 +    $q = db_insert('code_coverage_sets')
 +      ->fields(array(
 +        'id' => $this->testId,
-+        'created' => time()
++        'created' => time(),
 +      ))
 +      ->execute();
    }
