@@ -142,11 +142,11 @@ function drush_code_coverage_export($coverage_set) {
         $lines = str_replace('class="code-coverage-covered"', 'style="color:green"', $lines);
         $lines = str_replace('class="code-coverage-uncovered"', 'style="color:red"', $lines);
       }
-      file_unmanaged_save_data($lines, $directory . '/' . $coverage_set . '/' . $file->file_id . '.html', FILE_EXISTS_REPLACE);
+      file_put_contents($directory . '/' . $coverage_set . '/' . $file->file_id . '.html', $lines);
     }
 
     // Save summary data as JSON.
-    file_unmanaged_save_data(json_encode($files), $directory . '/summary.json', FILE_EXISTS_REPLACE);
+    file_put_contents($directory . '/summary.json', json_encode($files));
   }
   else {
     $files = db_select('code_coverage', 'c')
@@ -164,7 +164,7 @@ function drush_code_coverage_export($coverage_set) {
   if (drush_get_option('xml')) {
     $files = code_coverage_report_file_list($coverage_set);
     $xml = generate_valid_xml_from_array($files);
-    file_unmanaged_save_data($xml, $directory . '/coverage.xml', FILE_EXISTS_REPLACE);
+    file_put_contents($directory . '/coverage.xml', $xml);
   }
 
   // Generate CSV.
@@ -193,10 +193,10 @@ function drush_code_coverage_export($coverage_set) {
     $totals['percentage'] = round($totals['percentage'] / $filecount);
     $csv .= implode(',', $totals);
 
-    file_unmanaged_save_data($csv, $directory . '/coverage.csv', FILE_EXISTS_REPLACE);
+    file_put_contents($directory . '/coverage.csv', $csv);
   }
 
-  file_unmanaged_save_data(json_encode($files), $directory . '/coverage.json', FILE_EXISTS_REPLACE);
+  file_put_contents($directory . '/coverage.json', json_encode($files));
 
   if (drush_get_option('generate-index')) {
     // Create an index.html in the code_coverage directory.
@@ -226,7 +226,7 @@ function drush_code_coverage_export($coverage_set) {
       $node->setAttribute('href', $href);
     }
     $index = $index_dom->saveHTML();
-    file_unmanaged_save_data($index, $directory . '/index.html', FILE_EXISTS_REPLACE);
+    file_put_contents($directory . '/index.html', $index);
   }
 
   // Print directory in which exported data resides.
@@ -352,7 +352,7 @@ function drush_code_coverage_list_unprocessed() {
     if ($path == 1) {
       $path = 'temporary://code_coverage_unprocessed_' . time() . '.csv';
     }
-    file_unmanaged_save_data($csv, $path, FILE_EXISTS_REPLACE);
+    file_put_contents($path, $csv);
   }
 
   //If the --timestamp tag is set, add them in. Otherwise just print the list.

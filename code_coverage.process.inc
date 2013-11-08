@@ -47,7 +47,7 @@ function code_coverage_process($coverage_sets) {
       }
 
       // Remove raw data file once it has been processed.
-      file_unmanaged_delete($coverage_file->uri);
+      unlink($coverage_file->uri);
     }
 
     // Store coverage data.

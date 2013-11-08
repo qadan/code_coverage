@@ -70,7 +70,7 @@ function code_coverage_record($coverage_set, $process = FALSE) {
   // Encode the code coverage data as json and store in a temporary file.
   $coverage = xdebug_get_code_coverage();
   code_coverage_stop();
-  file_unmanaged_save_data(json_encode($coverage), 'temporary://code_coverage_' . $coverage_set . '.json');
+  file_put_contents('temporary://code_coverage_' . $coverage_set . '.json', json_encode($coverage));
 
   // Restore the temporary directory to testing value.
   if (!empty($GLOBALS['drupal_test_info'])) $GLOBALS['conf']['file_temporary_path'] = $temp;
