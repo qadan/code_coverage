@@ -347,7 +347,7 @@ function drush_code_coverage_list_unprocessed() {
   if ($path = drush_get_option('csv')) {
     $csv = "ID,Timestamp\n";
     foreach ($list as $id => $created) {
-      $csv .= $id . "," . $created . "\n";
+      $csv .= $id . "," . date('Y-m-d h:i:s', $created) . "\n";
     }
     if ($path == 1) {
       $path = 'temporary://code_coverage_unprocessed_' . time() . '.csv';
@@ -358,7 +358,7 @@ function drush_code_coverage_list_unprocessed() {
   //If the --timestamp tag is set, add them in. Otherwise just print the list.
   if (drush_get_option('timestamp')) {
     foreach ($list as $id => $created) {
-      drush_print($id . " ($created)");
+      drush_print($id . " (" . date('Y-m-d h:i:s', $created) . ")");
     }
   }
   else {
